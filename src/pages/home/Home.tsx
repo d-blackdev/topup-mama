@@ -43,12 +43,12 @@ const Home = () => {
       .then((res) => {
         setLoading(false);
         setUsers(res.data);
-        setPaginate({
-          ...paginate,
+        setPaginate((p) => ({
+          ...p,
           page: res.page,
           total: res.total,
           totalPage: res.total_pages,
-        });
+        }));
       })
       .catch((err: IAuthErrorResponse<{ error: string }>) => {
         setLoading(false);
@@ -58,7 +58,7 @@ const Home = () => {
           setError("Error fetching users");
         }
       });
-  }, [getUser]);
+  }, [getUser, paginate.page]);
 
   // UseEffect to call refresh user token
   useEffect(() => {
@@ -78,7 +78,7 @@ const Home = () => {
           errorHandler(err);
         });
     }
-  }, [minuteTime, secondTime]);
+  }, [minuteTime, secondTime, dispatch, login, navigate]);
 
   // Starting the timer on login success
   useEffect(() => {

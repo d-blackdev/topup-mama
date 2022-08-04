@@ -17,7 +17,7 @@ const NavBar = () => {
       )}
       {!user && (
         <Link
-          to="user/2"
+          to="/"
           className="border border-secondary-yellow text-white-main px-1 sm:px-2 md:h-10 h-8 rounded-md md:text-base text-xs flex flex-row items-center justify-center bg-secondary-yellow transition-all duration-200 ease-in-out hover:bg-secondary-yellow"
         >
           <p>My Account</p>
