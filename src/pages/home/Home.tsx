@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Pagination, PaginationItem } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import ScreenErrorLayout from "../../component/error/ScreenError";
 import Loader from "../../component/loader/Loader";
@@ -17,6 +18,9 @@ import {
   logoutUser,
   saveUser,
 } from "../login/loginSlice";
+import { toast } from "react-toastify";
+import Geocode from "react-geocode";
+import { API_KEY } from "../../config";
 
 const Home = () => {
   const dispatch = useAppDispatch();
@@ -27,7 +31,9 @@ const Home = () => {
     page: 1,
     totalPage: 0,
     total: 0,
+    postPerPage: 0,
   });
+  const [userLocation, setUserLocation] = useState("");
   const { minuteTime, secondTime } = useAppSelector((state) => state.login);
   const [users, setUsers] = useState<IUser[] | []>([]);
   // Mutation
@@ -48,6 +54,7 @@ const Home = () => {
           page: res.page,
           total: res.total,
           totalPage: res.total_pages,
+          postPerPage: res.per_page,
         }));
       })
       .catch((err: IAuthErrorResponse<{ error: string }>) => {
@@ -104,11 +111,45 @@ const Home = () => {
   useEffect(() => {
     getAllUsers();
     dispatch(clearUser());
+    Geocode.setApiKey(`${API_KEY}`);
   }, [dispatch, getAllUsers]);
 
   const logout = () => {
     dispatch(logoutUser());
   };
+
+  // const indexOfLastPage = paginate.page * paginate.postPerPage;
+  // // const indexOfFirstPost = indexOfLastPage - paginate.postPerPage;
+
+  // GeoLocation
+  const options = useMemo(
+    () => ({
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0,
+    }),
+    []
+  );
+
+  const success = useCallback((pos: any) => {
+    const crd = pos.coords;
+    Geocode.fromLatLng(`${crd.latitude}`, `${crd.longitude}`).then(
+      (response) => {
+        const address = response.results[0].formatted_address;
+        setUserLocation(address);
+      },
+      (error) => {
+        toast.error("Error getting user location");
+      }
+    );
+  }, []);
+
+  const locationError = useCallback((err: any) => {
+    toast.error("Error getting user location");
+  }, []);
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(success, locationError, options);
+  }, [success, options, locationError]);
 
   if (error) {
     return <ScreenErrorLayout error={error} retry={getAllUsers} />;
@@ -140,10 +181,11 @@ const Home = () => {
         </p>
       </div>
       <div className="w-full h-full bg-white-main rounded-md px-5 py-5 overflow-y-auto">
-        <div className="border-b border-b-white-lightGray pb-3 w-full flex flex-row">
+        <div className="border-b border-b-white-lightGray pb-3 w-full flex flex-row items-center justify-between">
           <p className="text-xl font-mono font-bold text-white-lightGray">
             All Users
           </p>
+          <p className="text-[10px] text-white-text2">{userLocation}</p>
         </div>
         {/* Users */}
         <div className="w-full mt-3">
@@ -160,6 +202,26 @@ const Home = () => {
                 }}
               />
             ))}
+        </div>
+        {/* Pagination */}
+        <div className="flex justify-center items-center mt-10">
+          <div>
+            {paginate.totalPage > 6 && (
+              <p className="text-sm font-bold text-center  my-3">
+                Page {paginate.page} of&nbsp;
+                {paginate.totalPage}
+              </p>
+            )}
+
+            <Pagination
+              count={paginate.totalPage}
+              page={paginate.page}
+              onChange={(event, val) => {
+                setPaginate({ ...paginate, page: val });
+              }}
+              renderItem={(item) => <PaginationItem {...item} />}
+            />
+          </div>
         </div>
       </div>
     </MainContainer>
